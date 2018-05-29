@@ -13,27 +13,34 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 
 	private String schedulingAlgo;
 	private boolean isPreemptive;
-	private int noOfQueues = 0;
+	public static int noOfQueues = 0;
 
 	public AddQueueFrame(Frame frame) {
 		this.frame = frame;
 		this.addWindowListener(new Window(this));
 		setLayout(new BorderLayout());
 		//setUndecorated(true);
-		setSize(300,150);
+		setSize(300,180);
 		setResizable(false);
 		setVisible(true);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-		JPanel config = new JPanel();
-		JPanel buttons = new JPanel();
 		JPanel mainPanel = new JPanel();
-
 		mainPanel.setLayout(new BorderLayout());
-		mainPanel.add(config, BorderLayout.CENTER);
-		mainPanel.add(buttons, BorderLayout.SOUTH);
-		config.setLayout(new FlowLayout(FlowLayout.CENTER));
+		JPanel algoPanel = new JPanel();
+		algoPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+		JPanel preemptPanel = new JPanel();
+		preemptPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+		JPanel quantumPanel = new JPanel();
+		quantumPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+		buttonPanel.setPreferredSize(new Dimension(100,40));
+
+		mainPanel.add(algoPanel, BorderLayout.NORTH);
+		mainPanel.add(preemptPanel, BorderLayout.CENTER);
+		mainPanel.add(quantumPanel, BorderLayout.SOUTH);
 
 		JLabel quantumLabel = new JLabel("Quantum Time: ");
 		quantumTime = new JTextField(2);
@@ -42,14 +49,14 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 		ButtonGroup bg = new ButtonGroup();
 		for(int x = 0; x < schedulingType.length; x++) {
 			bg.add(schedulingType[x] = new JRadioButton(radio[x]));
-			config.add(schedulingType[x]);
+			algoPanel.add(schedulingType[x]);
 		}
 
 		String[] preRadio = {"Preemptive", "Non-Preemptive"};
 		ButtonGroup bg2 = new ButtonGroup();
 		for(int a = 0; a < preemptiness.length; a++) {
 			bg2.add(preemptiness[a] = new JRadioButton(preRadio[a]));
-			config.add(preemptiness[a]);
+			preemptPanel.add(preemptiness[a]);
 		}
 
 		errorLabel = new JLabel();
@@ -61,17 +68,37 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 		cancel = new JButton("Cancel");
 		cancel.addActionListener(this);
 
-		config.add(quantumLabel);
-		config.add(quantumTime);
+		quantumPanel.add(quantumLabel);
+		quantumPanel.add(quantumTime);
 
-		buttons.add(errorLabel);
-		buttons.add(createQueueButton);
-		buttons.add(cancel);
+		buttonPanel.add(errorLabel);
+		buttonPanel.add(createQueueButton);
+		buttonPanel.add(cancel);
 
 		add(mainPanel, BorderLayout.CENTER);
+		add(buttonPanel, BorderLayout.SOUTH);
 	}
 
 	public boolean isComplete() {
+		boolean hasChosen = false;
+		for(int x = 0; x < schedulingType.length; x++) {
+			if(schedulingType[x].isSelected()) {
+				hasChosen = true;
+				schedulingAlgo = schedulingType[x].getText();
+				if(schedulingAlgo.equals("FCFS")) {
+					quantumTime.setEditable(false);
+					quantumTime.setText("0");
+					isPreemptive = false;
+					return true;
+				} else {
+					break;
+				}
+			}
+		}
+		if(!hasChosen) {
+			errorLabel.setText("Select an algorithm.");
+			return false;
+		}
 		if(quantumTime.getText().equals("") || quantumTime.getText() == null) {
 			errorLabel.setText("Indicate quantum time.");
 			return false;
@@ -86,18 +113,13 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 			errorLabel.setText("Invalid time.");
 			return false;
 		}
-		for(int x = 0; x < schedulingType.length; x++) {
-			if(schedulingType[x].isSelected()) {
-				schedulingAlgo = schedulingType[x].getText();
-			}
-		}
 		for(int x = 0; x < preemptiness.length; x++) {
 			if(preemptiness[x].isSelected()) {
 				isPreemptive = preemptiness[x].getText().equals("Preemptive") ? true : false;
 				return true;
 			}
 		}
-		errorLabel.setText("Select algorithm.");
+		errorLabel.setText("Select Queue Type.");
 		return false;
 	}
 
