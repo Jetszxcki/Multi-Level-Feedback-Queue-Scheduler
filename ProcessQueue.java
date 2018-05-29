@@ -4,6 +4,7 @@ public class ProcessQueue{
 	PCB.PCBLink first = new PCB.PCBLink(null);
 	int queueType;
 	int quantum = 5;
+	int queue_quantum = 10;
 	boolean isPreemptive = true;
 	boolean queuing = false;
 	
@@ -114,7 +115,7 @@ public class ProcessQueue{
 			}
 			while(!(buff.value == null)){
 				//ret += buff.value.name +"|";
-				Frame.processesLabel[queueNo][i].setBackground(java.awt.Color.CYAN);
+				Frame.processesLabel[queueNo][i].setBackground(buff.value.color);
 				Frame.processesLabel[queueNo][i].setText(buff.value.name);
 				//ret += "\nProcess " + i + ": " + buff.value.name + 
 						//"\nBurst time: " + buff.value.burst_time +
@@ -125,21 +126,5 @@ public class ProcessQueue{
 			}
 		}catch(NullPointerException ex){}
 		//return ret;
-	}
-	
-	public static void main(String[] args){
-		//can try checking them here
-		ProcessQueue pq = new ProcessQueue(STR);
-		//PCB b1 = pq.dequeue();
-		int[] prio = {1,6,4,83,03,54,7,9,3,10};
-		int[] burst_times = {12,30,42,9,1,69,12,3,57,29};
-		for(int i = 0; i < 10; i++){
-			pq.enqueue(new PCB(prio[i], burst_times[i], burst_times[i], i));
-			//System.out.println("\n---------------" + pq.toString() + "---------------");
-		}
-		System.out.println("\n---------------" + pq.toString() + "---------------");
-		PCB b = pq.dequeue();
-		b.remaining_time = 0;
-		System.out.println("\n---------------" + pq.toString() + "---------------");
 	}
 }
