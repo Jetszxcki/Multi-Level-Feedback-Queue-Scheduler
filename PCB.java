@@ -1,6 +1,9 @@
 //Usage PCB(priority_num, burst_time, remaining_time, arrival_time);
+import java.awt.Color;
 
 public class PCB{
+
+	Color color;
 	String name = "";
 	int burst_time = 0;
 	int remaining_time = 0;
@@ -11,16 +14,18 @@ public class PCB{
 	int response_time = -1;
 	int waiting_time = -1;
 	int turnaround_time = -1;
-	public PCB(String n, int prio, int bt, int rt, int at){
-		this(prio, bt, rt, at);
+
+	public PCB(String n, int prio, int bt, int rt, int at, Color c){
+		this(prio, bt, rt, at, c);
 		this.name = n;
 	}
 	
-	public PCB(int prio, int bt, int rt, int at){
+	public PCB(int prio, int bt, int rt, int at, Color c){
 		this.burst_time = bt;
 		this.remaining_time = rt;
 		this.priority = prio;
 		this.arrival_time = at;
+		this.color = c;
 	}
 	
 	public static class PCBLink{
