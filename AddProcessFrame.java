@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Random;
 
 public class AddProcessFrame extends JFrame implements ActionListener, Validate {
 	
@@ -79,9 +80,14 @@ public class AddProcessFrame extends JFrame implements ActionListener, Validate 
 				String[] pcb = { processInfo[0].getText(), processInfo[1].getText(),
 							     processInfo[2].getText(), processInfo[3].getText()};
 
+				Random randomizer = new Random();
+				int R = randomizer.nextInt(256);
+				int G = randomizer.nextInt(256);
+				int B = randomizer.nextInt(256);
+
 				frame.setFocusable(true);
 				frame.setEnabled(true);
-				frame.addProcess(pcb);
+				frame.addProcess(pcb, new Color(R,G,B));
 				this.dispose();
 			} else {
 				setSize(150,220);
