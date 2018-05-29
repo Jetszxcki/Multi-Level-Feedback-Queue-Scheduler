@@ -14,8 +14,6 @@ public class Frame extends JFrame implements ActionListener {
 	public static final Font CALIBRI = new Font("Calibri", Font.BOLD, 13);
 
 // config panel components
-
-	//private JRadioButton[] schedulingTypeRadioButtons = new JRadioButton[4];
 	private JPanel[] panels = new JPanel[3]; // main panels
 	
 	private AddProcessFrame addProcessFrame;
@@ -64,10 +62,12 @@ public class Frame extends JFrame implements ActionListener {
 	public static ArrayList<JLabel> GANTT_CHART_LABELS = new ArrayList<JLabel>();
 	public static ArrayList<JLabel> GANTT_TIME = new ArrayList<JLabel>();
 	public static JPanel[] bottomPanel = new JPanel[2];
+	public static JPanel[] GANTT_CHART_PANELS;
 	public static JPanel timePanel;
 	public static JPanel gcPanel;
 // end
 
+	public ArrayList<Color> pcb_colors = new ArrayList<Color>();
 	public int[][] queueTypes;
 	public PCB[] pcb;
 	public MLFQ mlfq;
@@ -113,19 +113,24 @@ public class Frame extends JFrame implements ActionListener {
 		int rat = 0;
 		int rp = 0;
 
+		int R = randomizer.nextInt(256);
+		int G = randomizer.nextInt(256);
+		int B = randomizer.nextInt(256);
+		Color c = new Color(R,G,B);
+
 		do {
 			rbt = randomizer.nextInt(11);
 		}while(rbt == 0);
 		rat = randomizer.nextInt(11);
 		rp = randomizer.nextInt(11);
-		randomized_process = new PCB("P"+String.valueOf(noOfProcesses+1), rp, rbt, rbt, rat);
+		randomized_process = new PCB("P"+String.valueOf(noOfProcesses+1), rp, rbt, rbt, rat, c);
 
 		pcbTableString[0] = "P" + String.valueOf(noOfProcesses+1);
 		pcbTableString[1] = String.valueOf(rp);
 		pcbTableString[2] = String.valueOf(rbt);
 		pcbTableString[3] = String.valueOf(rat);
 
-		addProcess(pcbTableString);
+		addProcess(pcbTableString, c);
 		//noOfProcesses++;
 
 		return randomized_process;
@@ -223,7 +228,7 @@ public class Frame extends JFrame implements ActionListener {
 		}
 
 		startSchedule = new JButton("Start Schedule");
-		startSchedule.setEnabled(false);
+		// startSchedule.setEnabled(false);
 		startSchedule.addActionListener(this);
 		resume = new JButton("Resume");
 		pause = new JButton("Pause");
@@ -341,12 +346,12 @@ public class Frame extends JFrame implements ActionListener {
 		gantt_scroll = new JScrollPane(bottomPanel[0]);
 		//gantt_scroll.setPreferredSize(new Dimension(100,100));
 		gcPanel = new JPanel();
-		gcPanel.setLayout(new GridLayout(1, GANTT_CHART_LABELS.size()));
-		gcPanel.setBorder(new LineBorder(Color.GRAY,3));
+		gcPanel.setLayout(new GridLayout(1,1));
+		gcPanel.setBorder(new LineBorder(Color.BLACK,3));
 		//gantt_scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 		timePanel = new JPanel();
 		timePanel.setLayout(new GridLayout(1,GANTT_CHART_LABELS.size()));
-		timePanel.setBorder(new LineBorder(Color.GRAY,2));
+		timePanel.setBorder(new LineBorder(Color.BLACK,2));
 
 		bottomPanel[0].add(timePanel, BorderLayout.NORTH);
 		bottomPanel[0].add(gcPanel, BorderLayout.CENTER);
@@ -356,7 +361,18 @@ public class Frame extends JFrame implements ActionListener {
 
 	}
 
-	public void addProcess(String[] processControlBlocks) {
+	/*private void SET_GCPANEL() {
+		GANTT_CHART_PANELS = new JPanel[noOfQueues];
+		gcPanel.setLayout(new GridLayout(noOfQueues, 1));
+		for(int x = 0; x < noOfQueues; x++) {
+			GANTT_CHART_PANELS[x] = new JPanel();
+			GANTT_CHART_PANELS[x].setBorder(new LineBorder(Color.BLACK, 2));
+			gcPanel.add(GANTT_CHART_PANELS[x]);
+			gcPanel.revalidate();
+		}
+	}*/
+
+	public void addProcess(String[] processControlBlocks, Color c) {
 
 		boolean noDuplicates = true;
 		for(int x = 0; x < processes.length; x++) {
@@ -384,6 +400,8 @@ public class Frame extends JFrame implements ActionListener {
 			dtm.addRow(processControlBlocks);
 			noOfProcesses++;
 		}
+		pcb_colors.add(c);
+
 		if(noOfProcesses == 2) {
 			loadProcessButton.setEnabled(true);
 		}
@@ -418,9 +436,7 @@ public class Frame extends JFrame implements ActionListener {
 		dtm.addRow(qcb);
 		noOfQueues++;
 
-		//if(noOfQueues >= 1) {
-			loadQueueButton.setEnabled(true);
-		//}
+		loadQueueButton.setEnabled(true);
 
 	}
 
@@ -433,11 +449,34 @@ public class Frame extends JFrame implements ActionListener {
 		for(int x = 0; x < noOfProcesses; x++) {
 			pcb[x] = new PCB(processes[x][0], Integer.parseInt(processes[x][1]), 
 							 Integer.parseInt(processes[x][2]), Integer.parseInt(processes[x][2]),
-							 Integer.parseInt(processes[x][3]));
+							 Integer.parseInt(processes[x][3]), pcb_colors.get(x));
 		}
 		//for(int x = 0; x < pcb.length; x++) {
 		//	System.out.println(pcb[x].name+" " + pcb[x].priority+" " + pcb[x].burst_time+" " + pcb[x].arrival_time);
 		//}
+
+		processReady = true;
+		if(queuesReady) {
+			mlfq.loadProcesses(pcb);
+			startSchedule.setEnabled(true);
+		}
+
+	}
+
+	public void loadProcesses(int[] prio, int[] bt, int[] at, int noOfProcesses) {
+		
+		addProcessButton.setEnabled(false);
+		loadProcessButton.setEnabled(false);
+		
+		pcb = new PCB[noOfProcesses];
+		Random randomizer = new Random();
+		for(int x = 0; x < noOfProcesses; x++) {
+			int R = randomizer.nextInt(256);
+			int G = randomizer.nextInt(256);
+			int B = randomizer.nextInt(256);
+			Color c = new Color(R,G,B);
+			pcb[x] = new PCB("P"+(x+1), prio[x], bt[x],bt[x],at[x], c);
+		}
 
 		processReady = true;
 		if(queuesReady) {
@@ -508,10 +547,11 @@ public class Frame extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 
 		if(e.getSource() == addProcessButton) {
-			randomizeProcess();
+			// randomizeProcess();
 			// the statements below are for manual adding of processes
-			//this.setEnabled(false);
-			//addProcessFrame = new AddProcessFrame(this);
+			this.setEnabled(false);
+			addProcessFrame = new AddProcessFrame(this);
+			loadProcessButton.setEnabled(true);
 		} 
 		else if(e.getSource() == addQueueButton) {
 			this.setEnabled(false);
@@ -519,6 +559,24 @@ public class Frame extends JFrame implements ActionListener {
 		}
 		else if(e.getSource() == loadProcessButton) {
 			loadProcesses();
+			
+			// int[] prio = {12,4,4,18,17,4,20,16,19,16,17,10,3,14,10};
+			// int[] bt = {6,17,3,19,7,35,46,27,25,21,26,40,49,48,43};
+			// int[] at = {39,37,5,16,32,5,13,38,16,1,16,17,29,33,28};
+
+			// int[] prio = {5,6,4,19,7,20,8,19,16,5,1,17};
+			// int[] bt = {7,17,6,17,8,2,24,36,32,41,47,49};
+			// int[] at = {27,26,5,29,39,8,24,35,31,21,36,21};
+
+			// int[] prio = {8,16,2,4,10,20,7,10,5,19,1,3};
+			// int[] bt = {13,1,14,7,8,6,19,3,41,43,26,29};
+			// int[] at = {5,20,6,20,15,4,3,17,1,11,16,6};
+
+
+		// 	if(prio.length == bt.length && prio.length == at.length) {
+		// 		System.out.println("EQUAL");
+		// 	}
+		// 	loadProcesses(prio,bt,at,prio.length);
 		} 
 		else if(e.getSource() == loadQueueButton) {
 			loadQueues();
@@ -535,38 +593,19 @@ public class Frame extends JFrame implements ActionListener {
 			mlfq.timer.stop();
 			pause.setEnabled(false);
 			resume.setEnabled(true);
+			newButton.setEnabled(true);
 		}
 		else if(e.getSource() == startSchedule) {
+			// SET_GCPANEL();
 			pause.setEnabled(true);
 			startSchedule.setEnabled(false);
 			newButton.setEnabled(false);
 			postAnalysisButton.setEnabled(false);
 			this.remove(panels[1]);
+			new F(this,noOfQueues);
 			SET_MLFQ_PANEL(noOfQueues);
-			updateStatusTable(); // SAVE
+			updateStatusTable();
 			mlfq.start_scheduling();
-/*
-			PCB[] p = new PCB[2];
-			///*	
-			int[] prio =         {1,6};
-			int[] burst_times =  {3,3};
-			int[] arrival_time = {1,4};
-
-			for(int i = 0; i < p.length; i++){
-				p[i] = new PCB(("P"+(i+1)), prio[i], burst_times[i], burst_times[i],arrival_time[i]);
-			}
-			int[][] qt = {{ProcessQueue.RR, 5}, {ProcessQueue.RR, 10}};
-			SET_MLFQ_PANEL(qt.length);
-			mlfq = new MLFQ(qt);
-			mlfq.loadProcesses(p);
-
-			if(mlfq.start_scheduling()){
-				System.out.println("Running");
-				try{
-					Thread.sleep(1000);
-				}catch(InterruptedException ex){}
-			}
-*/
 		}
 		else if(e.getSource() == postAnalysisButton) {
 			showResults();
@@ -586,6 +625,7 @@ public class Frame extends JFrame implements ActionListener {
 
 		processes = new String[1][4];
 		queues = new String[1][3];
+		pcb_colors = new ArrayList<Color>();
 
 		startSchedule.setEnabled(false);
 		GANTT_TIME = new ArrayList<JLabel>();
@@ -595,6 +635,7 @@ public class Frame extends JFrame implements ActionListener {
 		noOfQueues = 0;
 		processReady = false;
 		queuesReady = false;
+		AddQueueFrame.noOfQueues = 0;
 
 		this.remove(panels[1]);
 		SET_MLFQ_PANEL(DEFAULT_MAX);
@@ -609,8 +650,8 @@ public class Frame extends JFrame implements ActionListener {
 		analysisPanel.setLayout(new BoxLayout(analysisPanel, BoxLayout.Y_AXIS));
 
 		this.setEnabled(false);
-		postAnalysisFrame = new JFrame("Full Analysis");
-		postAnalysisFrame.setSize(350,300);
+		postAnalysisFrame = new JFrame("Post Analysis");
+		postAnalysisFrame.setSize(350,600);
 		postAnalysisFrame.setVisible(true);
 		postAnalysisFrame.setResizable(false);
 		postAnalysisFrame.setLocationRelativeTo(null);
