@@ -17,13 +17,6 @@ import java.awt.Color;
 
 public class MLFQ implements ActionListener{
 	Timer timer = new Timer(1, this);
-	/*
-	 we could simulate amount of time used by different events like:
-	 int total_time;
-	 int total_cpu_time;
-	 int total_overhead = total_time - total_cpu_time;
-	 etc.
-	*/
 	PCB[] processes = null;
 	
 	ProcessQueue[] queue_level = null;
@@ -42,11 +35,6 @@ public class MLFQ implements ActionListener{
 	float ave_waiting = 0;
 	float ave_response = 0;
 	
-	
-	int queue_quantum = 5;
-	int current_level = 0;
-	int queue_remaining_time = 0;
-	
 	public MLFQ(int[][] queueTypes){
 		queue_level = new ProcessQueue[queueTypes.length];
 		for(int i = 0; i < queueTypes.length; i++){
@@ -59,7 +47,6 @@ public class MLFQ implements ActionListener{
 			}else{
 				queue_level[i] = new ProcessQueue(queueTypes[i][0]);
 			}
-			queue_level[i].queue_quantum = (queueTypes.length-i)*queue_quantum;
 		}
 	}
 	
@@ -97,19 +84,17 @@ public class MLFQ implements ActionListener{
 			current_time = 0;
 			//overhead_time = 0;
 			cpu_time = 0;
-			current_level = 0;
-			queue_remaining_time = queue_level[current_level].queue_quantum-1;
 			timer.start();
 		}
 		return true;
 	}
 	
 	public void actionPerformed(ActionEvent ev){
-
-		try { Thread.sleep(1); }catch(InterruptedException e) {}
+		//long s = System.nanoTime();
+		try { Thread.sleep(1000); }catch(InterruptedException e) {}
 		if(is_schedulling){return;}
 		is_schedulling = true;
-		System.out.println("(Time: " + current_time + ") current_level = " + current_level + ", remaining_time = " + queue_remaining_time); 
+		System.out.println("(Time: " + current_time + ")"); 
 
 		while(!arrival_queue.isEmpty() && arrival_queue.peek().arrival_time == current_time){
 			PCB buffer = arrival_queue.dequeue();
@@ -118,40 +103,52 @@ public class MLFQ implements ActionListener{
 			System.out.println("\t" + buffer.name + " is queued");
 			//System.out.println("Queue Level: " + buffer.current_level);
 		}
-		//if(in_CPU == null){//comment this part to change to pre emptive & uncomment to change to non pre emptive
+		isPreemptive = true;
+		if(in_CPU == null || isPreemptive){//comment this part to change to pre emptive & uncomment to change to non pre emptive
 			boolean queuesEmpty = true;
-			if(queue_remaining_time <= 0){
-				current_level = (current_level+1)%queue_level.length;
-				queue_remaining_time = queue_level[current_level].queue_quantum;
-				if(!(in_CPU == null)){
-					if(in_CPU.remaining_time > 0){
-						System.out.println("...");
-						promoteProcess(in_CPU);
-						in_CPU = null;
-					}
-				}
-			}
 			for(int i = 0; i < queue_level.length; i++){
-				if(queue_level[current_level].isEmpty()){
-					current_level = (current_level+1)%queue_level.length;
-				}else{
-					if(in_CPU == null || queue_level[current_level].queueType == ProcessQueue.STR){
-						queuesEmpty = true;
-						if(!(in_CPU == null)){
-							retainProcess(in_CPU);
-							in_CPU = null;
-						}
-						in_CPU = queue_level[current_level].dequeue();
-						if(in_CPU.response_time == -1){
-							in_CPU.response_time = current_time - in_CPU.arrival_time;
-						}
-						if(queue_level[current_level].queueType == ProcessQueue.RR){
-							cpu_quantum = queue_level[i].quantum; 
+				if(!(queue_level[i].isEmpty())){
+					//comment this part below to change to non pre emptive & uncomment to change to pre emptive 
+					if(isPreemptive) {
+						queuesEmpty = false;
+						if(in_CPU!=null){
+							//System.out.println("queue level is preemptive " + queue_level[i].isPreemptive + ";" + in_CPU.remaining_time + ";" + queue_level[i].peek().remaining_time+";"+(queue_level[i].queueType == ProcessQueue.STR));
+							if(in_CPU.current_level > i){
+								System.out.println("Higher ups");
+								System.out.print("\tMoved " + in_CPU.name + " from level " + (in_CPU.current_level+1));
+								queue_level[in_CPU.current_level].enqueue(in_CPU);
+								System.out.println(" to level " + (in_CPU.current_level+1));
+							}else if((queue_level[i].isPreemptive && queue_level[i].queueType == ProcessQueue.PRIO) && in_CPU.priority > queue_level[i].peek().priority){
+								System.out.println("Higher priority preempt");
+								System.out.print("\tMoved " + in_CPU.name + " from level " + (in_CPU.current_level+1));
+								queue_level[(in_CPU.current_level==queue_level.length-1?in_CPU.current_level:++in_CPU.current_level)].enqueue(in_CPU);
+								System.out.println(" to level " + (in_CPU.current_level+1));
+							}else if((queue_level[i].isPreemptive && queue_level[i].queueType == ProcessQueue.STR) && in_CPU.remaining_time > queue_level[i].peek().remaining_time){
+								System.out.println("Shortest time preempt");
+								System.out.print("\tMoved " + in_CPU.name + " from level " + (in_CPU.current_level+1));
+								queue_level[(in_CPU.current_level==queue_level.length-1?in_CPU.current_level:++in_CPU.current_level)].enqueue(in_CPU);
+								System.out.println(" to level " + (in_CPU.current_level+1));
+							}else{
+								continue;
+							}
+						}else if(in_CPU == null){
+							//System.out.println("NULL");
 						}else{
-							cpu_quantum = in_CPU.remaining_time;
+							continue;
 						}
-						break;
 					}
+					//comment this part above to change to non pre emptive & uncomment to change to pre emptive
+					in_CPU = queue_level[i].dequeue();
+					if(in_CPU.response_time == -1){
+						in_CPU.response_time = current_time - in_CPU.arrival_time;
+					}
+					if(queue_level[i].queueType == ProcessQueue.RR){
+						cpu_quantum = queue_level[i].quantum; 
+					}else{
+						cpu_quantum = in_CPU.remaining_time;
+					}
+					queuesEmpty = false;
+					break;
 				}
 			}
 			if(queuesEmpty && arrival_queue.isEmpty() && in_CPU == null){
@@ -160,27 +157,24 @@ public class MLFQ implements ActionListener{
 				JOptionPane.showMessageDialog(null, "        Scheduling Finished.", "Done!", JOptionPane.INFORMATION_MESSAGE);
 				return;
 			}
-		//} //comment this part to change to pre emptive & uncomment to change to non pre emptive
+		} //comment this part to change to pre emptive & uncomment to change to non pre emptive
 		update_GANTT_CHART();
 		update_GANTT_CHART_2();
 
 		if(!(in_CPU == null)){
+			System.out.println("\t" + in_CPU.name + " in CPU: " + in_CPU.remaining_time + "/" + in_CPU.burst_time);
 			in_CPU.remaining_time--;
 			cpu_quantum--;
-			queue_remaining_time--;
-			System.out.println("\t" + in_CPU.name + " in CPU: " + in_CPU.remaining_time + "/" + in_CPU.burst_time);
-			if(cpu_quantum <= 0 || in_CPU.remaining_time <= 0){
+			if(cpu_quantum == 0 || in_CPU.remaining_time == 0){
 				if(in_CPU.remaining_time > 0){
 					System.out.print("\tMoved " + in_CPU.name + " from level " + (in_CPU.current_level+1));
-					//queue_level[(in_CPU.current_level==queue_level.length-1?in_CPU.current_level:++in_CPU.current_level)].enqueue(in_CPU);
-					demoteProcess(in_CPU);
+					queue_level[(in_CPU.current_level==queue_level.length-1?in_CPU.current_level:++in_CPU.current_level)].enqueue(in_CPU);
 					System.out.println(" to level " + (in_CPU.current_level+1));
 				}else{
 					in_CPU.turnaround_time = current_time-in_CPU.arrival_time+1;
 					in_CPU.waiting_time = in_CPU.turnaround_time-in_CPU.burst_time;
 					System.out.println("\t" + in_CPU.name + " is done");
 				}
-				
 				cpu_quantum = 0;
 				in_CPU = null;
 			}
@@ -190,23 +184,6 @@ public class MLFQ implements ActionListener{
 		current_time += 1;
 		is_schedulling = false;
 		updateMLFQ();
-	}
-	
-	public void promoteProcess(PCB process){
-		System.out.println("\tProcess " + process.name + " is promoted");
-		process.current_level = ((process.current_level==0)?(0):(process.current_level-1));
-		queue_level[process.current_level].enqueue(process);
-	}
-	
-	public void demoteProcess(PCB process){
-		System.out.println("\tProcess " + process.name + " is demoted");
-		process.current_level = ((process.current_level>=queue_level.length-1)?(process.current_level):((process.current_level+1)%queue_level.length));
-		queue_level[process.current_level].enqueue(process);
-	}
-	
-	public void retainProcess(PCB process){
-		System.out.println("\tProcess " + process.name + " is retained");
-		queue_level[process.current_level].enqueue(process);
 	}
 
 	private void updateMLFQ() {
@@ -314,28 +291,4 @@ public class MLFQ implements ActionListener{
 		System.out.println("Average turnaround time: " + ave_turnaround);
 		running = false;
 	}
-	/*
-	public static void main(String[] args){
-		
-		int[] prio =         {1,6,4,83,03,54,7,9,3,10};
-		int[] burst_times =  {3,3,4,6,17,6,1,3,5,2};
-		int[] arrival_time = {1,4,6,2,5,7,5,7,8,1};
-		
-		PCB[] p = new PCB[10];
-		// int[] prio =        {1,2};
-		// int[] burst_times = {1,2};
-		// int[] arrival_time = {1,2};
-		for(int i = 0; i < p.length; i++){
-			p[i] = new PCB(("P"+(i+1)), prio[i], burst_times[i], burst_times[i],arrival_time[i], null);
-		}
-		int[][] qt = {{ProcessQueue.RR, 5}, {ProcessQueue.RR, 10}};
-		MLFQ q = new MLFQ(qt);
-		q.loadProcesses(p);
-		if(q.start_scheduling()){
-			System.out.println("Running");
-			try{
-				Thread.sleep(1000);
-			}catch(InterruptedException e){}
-		}
-	}*/
 }
