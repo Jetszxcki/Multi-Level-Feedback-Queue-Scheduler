@@ -49,6 +49,7 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 		ButtonGroup bg = new ButtonGroup();
 		for(int x = 0; x < schedulingType.length; x++) {
 			bg.add(schedulingType[x] = new JRadioButton(radio[x]));
+			schedulingType[x].addActionListener(this);
 			algoPanel.add(schedulingType[x]);
 		}
 
@@ -85,45 +86,83 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 			if(schedulingType[x].isSelected()) {
 				hasChosen = true;
 				schedulingAlgo = schedulingType[x].getText();
-				if(schedulingAlgo.equals("FCFS")) {
-					quantumTime.setEditable(false);
-					quantumTime.setText("0");
-					isPreemptive = false;
-					return true;
-				} else {
-					break;
-				}
+				break;
 			}
 		}
+
 		if(!hasChosen) {
 			errorLabel.setText("Select an algorithm.");
 			return false;
-		}
-		if(quantumTime.getText().equals("") || quantumTime.getText() == null) {
-			errorLabel.setText("Indicate quantum time.");
-			return false;
-		}
-		try {
-			int check = Integer.parseInt(quantumTime.getText());
-			if(check <= 0) {
-				errorLabel.setText("QTime must be > 0.");
-				return false;
-			}
-		} catch(Exception e) {
-			errorLabel.setText("Invalid time.");
-			return false;
-		}
-		for(int x = 0; x < preemptiness.length; x++) {
-			if(preemptiness[x].isSelected()) {
-				isPreemptive = preemptiness[x].getText().equals("Preemptive") ? true : false;
+		} else {
+			if(schedulingAlgo.equals("FCFS") || schedulingAlgo.equals("Priority")) {
 				return true;
 			}
+			else if(schedulingAlgo.equals("Round Robin")) {
+				if(quantumTime.getText().equals("") || quantumTime.getText() == null) {
+					errorLabel.setText("Indicate quantum time.");
+					return false;
+				}
+				try {
+					int check = Integer.parseInt(quantumTime.getText());
+					if(check <= 0) {
+						errorLabel.setText("QTime must be > 0.");
+						return false;
+					}
+				} catch(Exception e) {
+					errorLabel.setText("Invalid quantum time.");
+					return false;
+				}
+				return true;
+			}
+			else if(schedulingAlgo.equals("SRTF")) {
+				for(int x = 0; x < preemptiness.length; x++) {
+					if(preemptiness[x].isSelected()) {
+						schedulingAlgo = (x == 0 ? "SRTF" : "SJF");
+						return true;
+					}
+				}
+				errorLabel.setText("Select Queue Type.");
+				return false;
+			}
 		}
-		errorLabel.setText("Select Queue Type.");
+		errorLabel.setText("Incomplete Data.");
 		return false;
 	}
 
+	private void enableRadio(boolean enabled) {
+		for(int x = 0; x < 2; x++) {
+			preemptiness[x].setEnabled(enabled);
+			if(enabled) {
+				preemptiness[x].setSelected(false);
+			}
+		}
+	}
+
 	public void actionPerformed(ActionEvent e) {
+		if(e.getSource() == schedulingType[0]) {
+			preemptiness[1].setSelected(true);
+			enableRadio(false);
+			quantumTime.setText("0");
+			quantumTime.setEditable(false);
+		}
+		else if(e.getSource() == schedulingType[1]) {
+			enableRadio(true);
+			quantumTime.setText("0");
+			quantumTime.setEditable(false);
+		}
+		else if(e.getSource() == schedulingType[2]) {
+			preemptiness[0].setSelected(true);
+			quantumTime.setEditable(false);
+			quantumTime.setText("0");
+			enableRadio(false);
+		}
+		else if(e.getSource() == schedulingType[3]) {
+			preemptiness[0].setSelected(true);
+			quantumTime.setEditable(true);
+			quantumTime.setText("0");
+			enableRadio(false);
+		}
+
 		if(e.getSource() == createQueueButton) {
 			if(isComplete()) {
 				String[] queueInfo = {
@@ -131,6 +170,11 @@ public class AddQueueFrame extends JFrame implements ActionListener, Validate {
 					quantumTime.getText(),
 					schedulingAlgo
 				};
+				for(int x = 0; x < preemptiness.length; x++) {
+					if(preemptiness[x].isSelected()) {
+						isPreemptive = preemptiness[x].getText().equals("Preemptive") ? true : false;
+					}
+				}
 				frame.addQueues(queueInfo, isPreemptive);
 				frame.setFocusable(true);
 				frame.setEnabled(true);
