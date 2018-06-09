@@ -14,14 +14,12 @@ public class F extends JFrame {
 	private JPanel panel;
 	
 	public static JLabel[] queueTypeLabels;
-	public static JFrame frame;
 	public static int noOfQueues;
 
 
-	public F(JFrame frame, int noOfQueues) {
+	public F(int noOfQueues) {
 		super("MLFQ Process Queue Distribution");
 		this.noOfQueues = noOfQueues;
-		this.frame = frame;
 
 		panel = new JPanel();
 		leftPanel = new JPanel();
@@ -56,7 +54,12 @@ public class F extends JFrame {
 	}
 
 	public static void reset() {
-
+		queueLabels = new ArrayList<ArrayList<JLabel>>();
+		timeLabels = new ArrayList<JLabel>();
+		queuePanels = null;
+		timePanel = null;
+		queueTypeLabels = null;
+		noOfQueues = 0;
 	}
 
 }
