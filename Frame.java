@@ -48,10 +48,10 @@ public class Frame extends JFrame implements ActionListener {
 	public static int PROCESS_DIVISIONS = 0;
 	private int noOfProcesses = 0;
 	private int noOfQueues = 0;
+	public int[][] queueTypes;
 
 	private boolean processReady;
 	private boolean queuesReady;
-	//private boolean isPreemptive;
 
 // middle panel (For MLFQ)
 	public static JLabel[][] processesLabel;
@@ -68,10 +68,9 @@ public class Frame extends JFrame implements ActionListener {
 // end
 
 	public ArrayList<Color> pcb_colors = new ArrayList<Color>();
-	public int[][] queueTypes;
+	public F mlfqFrameDist;
 	public PCB[] pcb;
 	public MLFQ mlfq;
-
 	
 	public Frame(String frameTitle) {
 
@@ -228,7 +227,7 @@ public class Frame extends JFrame implements ActionListener {
 		}
 
 		startSchedule = new JButton("Start Schedule");
-		// startSchedule.setEnabled(false);
+		startSchedule.setEnabled(false);
 		startSchedule.addActionListener(this);
 		resume = new JButton("Resume");
 		pause = new JButton("Pause");
@@ -402,9 +401,7 @@ public class Frame extends JFrame implements ActionListener {
 		}
 		pcb_colors.add(c);
 
-		if(noOfProcesses == 2) {
-			loadProcessButton.setEnabled(true);
-		}
+		loadProcessButton.setEnabled(true);
 
 	}
 
@@ -490,7 +487,6 @@ public class Frame extends JFrame implements ActionListener {
 
 		addQueueButton.setEnabled(false);
 		loadQueueButton.setEnabled(false);
-		//System.out.println("No of. Queues: " + noOfQueues);
 
 		int[][] converted = new int[noOfQueues][2];
 		for(int x = 0; x < noOfQueues; x++) {
@@ -506,15 +502,12 @@ public class Frame extends JFrame implements ActionListener {
 			queueTypes[x][0] = converted[x][1];
 			queueTypes[x][1] = converted[x][0];
 		}
-		//for(int x = 0; x < noOfQueues; x++) {
-		//	System.out.println(queueTypes[x][0] + " " + queueTypes[x][1]);
-		//}
+
 		mlfq = new MLFQ(queueTypes);
 		for(int x = 0; x < mlfq.queue_level.length; x++) {
 			mlfq.queue_level[x].isPreemptive = queuebool[x];
 			System.out.println(mlfq.queue_level[x].isPreemptive);
 		}
-		//mlfq.isPreemptive = this.isPreemptive;
 
 		queuesReady = true;		
 		if(processReady)  {
@@ -547,11 +540,11 @@ public class Frame extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 
 		if(e.getSource() == addProcessButton) {
-			// randomizeProcess();
+			//randomizeProcess();
 			// the statements below are for manual adding of processes
 			this.setEnabled(false);
 			addProcessFrame = new AddProcessFrame(this);
-			loadProcessButton.setEnabled(true);
+			// loadProcessButton.setEnabled(true);
 		} 
 		else if(e.getSource() == addQueueButton) {
 			this.setEnabled(false);
@@ -559,7 +552,7 @@ public class Frame extends JFrame implements ActionListener {
 		}
 		else if(e.getSource() == loadProcessButton) {
 			loadProcesses();
-			
+			// TEST CASES USED IN THE MLFQ ANALYSIS
 			// int[] prio = {12,4,4,18,17,4,20,16,19,16,17,10,3,14,10};
 			// int[] bt = {6,17,3,19,7,35,46,27,25,21,26,40,49,48,43};
 			// int[] at = {39,37,5,16,32,5,13,38,16,1,16,17,29,33,28};
@@ -571,12 +564,7 @@ public class Frame extends JFrame implements ActionListener {
 			// int[] prio = {8,16,2,4,10,20,7,10,5,19,1,3};
 			// int[] bt = {13,1,14,7,8,6,19,3,41,43,26,29};
 			// int[] at = {5,20,6,20,15,4,3,17,1,11,16,6};
-
-
-		// 	if(prio.length == bt.length && prio.length == at.length) {
-		// 		System.out.println("EQUAL");
-		// 	}
-		// 	loadProcesses(prio,bt,at,prio.length);
+			// loadProcesses(prio,bt,at,prio.length);
 		} 
 		else if(e.getSource() == loadQueueButton) {
 			loadQueues();
@@ -602,7 +590,7 @@ public class Frame extends JFrame implements ActionListener {
 			newButton.setEnabled(false);
 			postAnalysisButton.setEnabled(false);
 			this.remove(panels[1]);
-			new F(this,noOfQueues);
+			mlfqFrameDist = new F(noOfQueues);
 			SET_MLFQ_PANEL(noOfQueues);
 			updateStatusTable();
 			mlfq.start_scheduling();
@@ -625,7 +613,9 @@ public class Frame extends JFrame implements ActionListener {
 
 		processes = new String[1][4];
 		queues = new String[1][3];
+		queuebool = new boolean[1];
 		pcb_colors = new ArrayList<Color>();
+
 
 		startSchedule.setEnabled(false);
 		GANTT_TIME = new ArrayList<JLabel>();
@@ -642,6 +632,10 @@ public class Frame extends JFrame implements ActionListener {
 		panels[2].remove(gantt_scroll);
 		panels[2].remove(bottomPanel[1]);
 		SET_GANTT_CHART_PANEL();
+		try {
+			mlfqFrameDist.reset();
+			mlfqFrameDist.dispose();
+		}catch(Exception e) {}
 	}
 
 	private void showResults() {
